@@ -3,74 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Syahrul Manga Reader</title>
+    <title>Syahrul Manga Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background: #0c0c0c; color: #fff; font-family: sans-serif; }
-        .manga-card { background: #1a1a1a; border: 1px solid #333; transition: 0.3s; }
-        .manga-card:hover { border-color: #ff0000; transform: translateY(-5px); }
-        #readerFrame { display: none; position: fixed; inset: 0; z-index: 1000; background: #000; }
+        body { background: #000; color: #fff; font-family: sans-serif; }
+        .manga-card { background: #111; border: 1px solid #333; transition: 0.3s; }
+        .manga-card:hover { border-color: #ff0000; transform: scale(1.02); }
     </style>
 </head>
 <body class="p-4">
 
-    <header class="text-center py-6">
-        <h1 class="text-4xl font-black text-red-600 italic">SYAHRUL OTAKU</h1>
-        <p class="text-[10px] text-gray-500 uppercase tracking-widest">Klik poster buat langsung baca!</p>
+    <header class="text-center py-10">
+        <h1 class="text-5xl font-black text-red-600 italic tracking-tighter">SYAHRUL OTAKU</h1>
+        <p class="text-[10px] text-gray-500 mt-2 uppercase">Klik Gambar = Langsung Ke Komiknya</p>
     </header>
 
-    <div id="mangaGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 max-w-7xl mx-auto pb-20">
-        </div>
+    <div class="max-w-md mx-auto mb-10 px-4">
+        <input type="text" id="searchInput" onkeyup="if(event.key==='Enter') cari()" 
+               placeholder="Cari judul (Contoh: One Piece)..." 
+               class="w-full p-4 bg-neutral-900 rounded-xl outline-none border border-red-900 focus:border-red-500">
+    </div>
 
-    <div id="readerFrame">
-        <div class="p-4 bg-black flex justify-between items-center border-b border-red-900">
-            <span class="text-red-600 font-bold text-sm uppercase italic">Syahrul Reading Mode</span>
-            <button onclick="closeReader()" class="bg-red-600 text-white px-6 py-1 rounded-full font-bold">KELUAR</button>
-        </div>
-        <iframe id="iframeManga" src="" class="w-full h-full"></iframe>
+    <div id="mangaGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5 max-w-7xl mx-auto">
+        <p class="col-span-full text-center py-20 text-red-500 animate-bounce">Tunggu bentar, lagi narik data...</p>
     </div>
 
     <script>
-        // Kita pake Mangadex biar lebih "Berisi"
-        async function loadViralManga() {
+        // Fungsi ambil data viral
+        async function loadData(url = 'https://api.jikan.moe/v4/top/manga?limit=30') {
             const grid = document.getElementById('mangaGrid');
-            grid.innerHTML = '<p class="col-span-full text-center py-10">Lagi bongkar gudang komik...</p>';
-            
             try {
-                // Ambil daftar manga populer
-                const res = await fetch('https://api.jikan.moe/v4/top/manga?limit=24');
+                const res = await fetch(url);
                 const json = await res.json();
                 
                 grid.innerHTML = json.data.map(m => `
-                    <div class="manga-card p-2 rounded-xl cursor-pointer" onclick="openReader('${m.title}')">
-                        <img src="${m.images.jpg.image_url}" class="w-full h-56 object-cover rounded-lg">
-                        <h3 class="text-[11px] mt-2 font-bold truncate uppercase text-red-100">${m.title}</h3>
-                        <p class="text-[9px] text-gray-500 font-bold">TAP UNTUK BACA</p>
+                    <div class="manga-card p-3 rounded-2xl cursor-pointer" onclick="baca('${m.title}')">
+                        <img src="${m.images.jpg.image_url}" class="w-full h-56 object-cover rounded-xl mb-3">
+                        <h3 class="text-[11px] font-bold truncate uppercase text-red-50">${m.title}</h3>
+                        <p class="text-[9px] text-red-500 mt-1 font-black">BACA SEKARANG →</p>
                     </div>
                 `).join('');
             } catch (e) {
-                grid.innerHTML = '<p class="text-red-500 text-center col-span-full font-bold">Internet lu lemot, Rul! Refresh lagi.</p>';
+                grid.innerHTML = '<p class="col-span-full text-center text-red-600">Gagal koneksi. Cek sinyal lu!</p>';
             }
         }
 
-        function openReader(title) {
-            const frame = document.getElementById('readerFrame');
-            const iframe = document.getElementById('iframeManga');
-            // Kita pake DuckDuckGo proxy biar gampang nyarinya di dalam web
-            const searchUrl = `https://duckduckgo.com/?q=!ducky+site%3Akomiku.id+${encodeURIComponent(title)}`;
-            
-            iframe.src = searchUrl;
-            frame.style.display = 'block';
-            document.body.style.overflow = 'hidden';
+        // FUNGSI INI YANG PENTING: Langsung lempar ke web baca
+        function baca(judul) {
+            // Kita arahkan ke pencarian komiku/komikcast yang lebih akurat
+            const url = `https://www.google.com/search?q=baca+manga+${encodeURIComponent(judul)}+bahasa+indonesia`;
+            window.open(url, '_blank');
         }
 
-        function closeReader() {
-            document.getElementById('readerFrame').style.display = 'none';
-            document.getElementById('iframeManga').src = "";
-            document.body.style.overflow = 'auto';
+        function cari() {
+            const q = document.getElementById('searchInput').value;
+            if(q) loadData(`https://api.jikan.moe/v4/manga?q=${q}&limit=30`);
         }
 
-        loadViralManga();
+        loadData();
     </script>
 </body>
 </html>
