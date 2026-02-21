@@ -7,57 +7,66 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background: #000; color: #fff; font-family: sans-serif; }
-        .manga-card { background: #111; border: 1px solid #333; transition: 0.3s; }
+        .manga-card { background: #111; border: 1px solid #333; transition: 0.3s; cursor: pointer; }
         .manga-card:hover { border-color: #ff0000; transform: scale(1.02); }
+        .red-glow { text-shadow: 0 0 15px #ff0000; }
     </style>
 </head>
 <body class="p-4">
 
-    <header class="text-center py-10">
-        <h1 class="text-5xl font-black text-red-600 italic tracking-tighter">SYAHRUL OTAKU</h1>
-        <p class="text-[10px] text-gray-500 mt-2 uppercase">Klik Gambar = Langsung Ke Komiknya</p>
+    <header class="text-center py-12">
+        <h1 class="text-6xl font-black text-red-600 italic red-glow">SYAHRUL OTAKU</h1>
+        <p class="text-[10px] text-gray-500 mt-2 uppercase tracking-[0.3em]">Direct Access V5.0 • Ramadhan Edition</p>
     </header>
 
-    <div class="max-w-md mx-auto mb-10 px-4">
+    <div class="max-w-md mx-auto mb-10">
         <input type="text" id="searchInput" onkeyup="if(event.key==='Enter') cari()" 
-               placeholder="Cari judul (Contoh: One Piece)..." 
-               class="w-full p-4 bg-neutral-900 rounded-xl outline-none border border-red-900 focus:border-red-500">
+               placeholder="Ketik judul (One Piece, Naruto, dll)..." 
+               class="w-full p-4 bg-neutral-900 rounded-2xl outline-none border border-red-900 focus:border-red-600 transition">
+        <p class="text-[9px] text-center mt-2 text-gray-600">Tekan Enter untuk mencari</p>
     </div>
 
-    <div id="mangaGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5 max-w-7xl mx-auto">
-        <p class="col-span-full text-center py-20 text-red-500 animate-bounce">Tunggu bentar, lagi narik data...</p>
+    <div id="mangaGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 max-w-7xl mx-auto pb-20">
+        <p class="col-span-full text-center py-20 text-red-500">Menghubungkan ke Portal...</p>
     </div>
 
     <script>
-        // Fungsi ambil data viral
-        async function loadData(url = 'https://api.jikan.moe/v4/top/manga?limit=30') {
+        // Load data awal (Top Manga)
+        async function loadData(url = 'https://api.jikan.moe/v4/top/manga?limit=24') {
             const grid = document.getElementById('mangaGrid');
             try {
                 const res = await fetch(url);
                 const json = await res.json();
                 
+                if (!json.data || json.data.length === 0) {
+                    grid.innerHTML = '<p class="col-span-full text-center">Komik gak ketemu, Rul.</p>';
+                    return;
+                }
+
                 grid.innerHTML = json.data.map(m => `
-                    <div class="manga-card p-3 rounded-2xl cursor-pointer" onclick="baca('${m.title}')">
-                        <img src="${m.images.jpg.image_url}" class="w-full h-56 object-cover rounded-xl mb-3">
-                        <h3 class="text-[11px] font-bold truncate uppercase text-red-50">${m.title}</h3>
-                        <p class="text-[9px] text-red-500 mt-1 font-black">BACA SEKARANG →</p>
+                    <div class="manga-card p-3 rounded-2xl" onclick="bacaLangsung('${m.title}')">
+                        <img src="${m.images.jpg.image_url}" class="w-full h-56 object-cover rounded-xl mb-4">
+                        <h3 class="text-[11px] font-bold truncate uppercase text-white">${m.title}</h3>
+                        <div class="flex justify-between items-center mt-2">
+                            <span class="text-[9px] text-red-500 font-black italic underline">BACA SEKARANG</span>
+                            <span class="text-[9px] text-gray-500">⭐ ${m.score || 'N/A'}</span>
+                        </div>
                     </div>
                 `).join('');
             } catch (e) {
-                grid.innerHTML = '<p class="col-span-full text-center text-red-600">Gagal koneksi. Cek sinyal lu!</p>';
+                grid.innerHTML = '<div class="col-span-full text-center"><p class="text-red-600 font-bold mb-4">Sinyal lu lagi turun, Rul!</p><button onclick="location.reload()" class="bg-red-600 px-8 py-2 rounded-full font-bold">COBA LAGI</button></div>';
             }
         }
 
-        // FUNGSI INI YANG PENTING: Langsung lempar ke web baca
-        function baca(judul) {
-            // Kita arahkan ke pencarian komiku/komikcast yang lebih akurat
+        // Fungsi direct link (Paling Aman)
+        function bacaLangsung(judul) {
             const url = `https://www.google.com/search?q=baca+manga+${encodeURIComponent(judul)}+bahasa+indonesia`;
             window.open(url, '_blank');
         }
 
         function cari() {
             const q = document.getElementById('searchInput').value;
-            if(q) loadData(`https://api.jikan.moe/v4/manga?q=${q}&limit=30`);
+            if(q.length > 2) loadData(`https://api.jikan.moe/v4/manga?q=${q}&limit=24`);
         }
 
         loadData();
