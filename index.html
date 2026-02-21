@@ -3,70 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Syahrul Otaku Portal V3.0</title>
+    <title>Syahrul Manga Reader</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; overflow-x: hidden; }
-        .glass { background: rgba(20, 20, 20, 0.98); border: 1px solid #444; }
-        /* Full Screen Reader */
-        #phantomReader { display: none; position: fixed; inset: 0; z-index: 200; background: #000; }
-        iframe { width: 100%; height: 100%; border: none; }
-        .loader { border: 4px solid #1a1a1a; border-top: 4px solid #ef4444; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        body { background: #0c0c0c; color: #fff; font-family: sans-serif; }
+        .manga-card { background: #1a1a1a; border: 1px solid #333; transition: 0.3s; }
+        .manga-card:hover { border-color: #ff0000; transform: translateY(-5px); }
+        #readerFrame { display: none; position: fixed; inset: 0; z-index: 1000; background: #000; }
     </style>
 </head>
 <body class="p-4">
 
-    <header class="text-center py-8">
-        <h1 class="text-5xl font-black text-red-600 italic drop-shadow-[0_0_10px_#f00]">SYAHRUL OTAKU</h1>
-        <p class="text-[10px] tracking-[0.3em] text-gray-500 mt-2 uppercase">Phantom Edition V3.0</p>
+    <header class="text-center py-6">
+        <h1 class="text-4xl font-black text-red-600 italic">SYAHRUL OTAKU</h1>
+        <p class="text-[10px] text-gray-500 uppercase tracking-widest">Klik poster buat langsung baca!</p>
     </header>
 
-    <div id="mangaGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 max-w-7xl mx-auto">
+    <div id="mangaGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 max-w-7xl mx-auto pb-20">
         </div>
 
-    <div id="phantomReader">
-        <div class="absolute top-0 left-0 w-full p-4 bg-gradient-to-b from-black to-transparent z-50 flex justify-between items-center">
-            <span class="text-red-500 font-bold text-xs uppercase">Syahrul Shadow Mode</span>
-            <button onclick="closeReader()" class="bg-red-600 text-white px-4 py-1 rounded-full font-bold">TUTUP [X]</button>
+    <div id="readerFrame">
+        <div class="p-4 bg-black flex justify-between items-center border-b border-red-900">
+            <span class="text-red-600 font-bold text-sm uppercase italic">Syahrul Reading Mode</span>
+            <button onclick="closeReader()" class="bg-red-600 text-white px-6 py-1 rounded-full font-bold">KELUAR</button>
         </div>
-        <iframe id="readerFrame" src=""></iframe>
+        <iframe id="iframeManga" src="" class="w-full h-full"></iframe>
     </div>
 
     <script>
-        async function getManga() {
+        // Kita pake Mangadex biar lebih "Berisi"
+        async function loadViralManga() {
             const grid = document.getElementById('mangaGrid');
+            grid.innerHTML = '<p class="col-span-full text-center py-10">Lagi bongkar gudang komik...</p>';
+            
             try {
-                const res = await fetch('https://api.jikan.moe/v4/top/manga?limit=30');
+                // Ambil daftar manga populer
+                const res = await fetch('https://api.jikan.moe/v4/top/manga?limit=24');
                 const json = await res.json();
+                
                 grid.innerHTML = json.data.map(m => `
-                    <div class="glass p-2 rounded-2xl cursor-pointer hover:scale-105 transition" onclick="openReader('${m.url}')">
-                        <img src="${m.images.jpg.image_url}" class="w-full h-52 object-cover rounded-xl">
-                        <h3 class="text-[10px] mt-3 font-bold truncate uppercase">${m.title}</h3>
-                        <p class="text-[9px] text-red-500">TAP UNTUK BACA</p>
+                    <div class="manga-card p-2 rounded-xl cursor-pointer" onclick="openReader('${m.title}')">
+                        <img src="${m.images.jpg.image_url}" class="w-full h-56 object-cover rounded-lg">
+                        <h3 class="text-[11px] mt-2 font-bold truncate uppercase text-red-100">${m.title}</h3>
+                        <p class="text-[9px] text-gray-500 font-bold">TAP UNTUK BACA</p>
                     </div>
                 `).join('');
-            } catch (err) { grid.innerHTML = "<p>Internet lu bapuk, Rul!</p>"; }
+            } catch (e) {
+                grid.innerHTML = '<p class="text-red-500 text-center col-span-full font-bold">Internet lu lemot, Rul! Refresh lagi.</p>';
+            }
         }
 
-        function openReader(url) {
-            const reader = document.getElementById('phantomReader');
+        function openReader(title) {
             const frame = document.getElementById('readerFrame');
-            // Kita arahkan ke web baca yang lebih ringan
-            frame.src = url; 
-            reader.style.display = 'block';
-            document.body.style.overflow = 'hidden'; // Biar gak scroll dobel
+            const iframe = document.getElementById('iframeManga');
+            // Kita pake DuckDuckGo proxy biar gampang nyarinya di dalam web
+            const searchUrl = `https://duckduckgo.com/?q=!ducky+site%3Akomiku.id+${encodeURIComponent(title)}`;
+            
+            iframe.src = searchUrl;
+            frame.style.display = 'block';
+            document.body.style.overflow = 'hidden';
         }
 
         function closeReader() {
-            const reader = document.getElementById('phantomReader');
-            const frame = document.getElementById('readerFrame');
-            reader.style.display = 'none';
-            frame.src = ""; // Stop loading pas ditutup
+            document.getElementById('readerFrame').style.display = 'none';
+            document.getElementById('iframeManga').src = "";
             document.body.style.overflow = 'auto';
         }
 
-        getManga();
+        loadViralManga();
     </script>
 </body>
 </html>
