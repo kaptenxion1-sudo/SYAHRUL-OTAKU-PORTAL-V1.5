@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syahrul Otaku Portal | V2.0 ⛩️</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { background: #000; color: #fff; font-family: 'Poppins', sans-serif; min-height: 100vh; overflow-x: hidden; }
+        .font-anime { font-family: 'Bangers', cursive; letter-spacing: 2px; }
+        .glass { background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(15px); border: 1px solid rgba(220, 38, 38, 0.3); }
+        .manga-card { transition: all 0.3s; cursor: pointer; }
+        .manga-card:hover { transform: translateY(-5px); border-color: #ef4444; box-shadow: 0 0 20px rgba(220, 38, 38, 0.3); }
+        
+        /* Modal Style */
+        #readerModal { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.9); transition: 0.3s; }
+        .modal-content { max-width: 600px; margin: 50px auto; padding: 20px; border: 2px solid #dc2626; position: relative; }
+        
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #dc2626; }
+    </style>
+</head>
+<body class="p-4">
+
+    <header class="max-w-6xl mx-auto mt-10 mb-10 text-center">
+        <h1 class="font-anime text-6xl text-red-600 drop-shadow-[0_0_15px_rgba(220,38,38,1)]">SYAHRUL OTAKU</h1>
+        <p class="text-[10px] tracking-[0.5em] text-red-500 font-bold uppercase">Shadow Reader V2.0</p>
+    </header>
+
+    <div class="max-w-md mx-auto mb-10">
+        <input type="text" id="searchInput" onkeyup="if(event.key==='Enter') searchManga()" placeholder="Cari anime/manga viral..." 
+               class="w-full p-4 glass rounded-xl outline-none border border-red-900 focus:border-red-600 transition">
+    </div>
+
+    <div id="mangaGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 max-w-7xl mx-auto">
+        </div>
+
+    <div id="readerModal" onclick="closeModal()">
+        <div class="modal-content glass rounded-3xl" onclick="event.stopPropagation()">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-2xl text-red-500 font-bold">&times;</button>
+            <div id="modalData" class="flex flex-col md:flex-row gap-6">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        async function getManga() {
+            const res = await fetch('https://api.jikan.moe/v4/top/manga?limit=50');
+            const data = await res.json();
+            display(data.data);
+        }
+
+        function display(list) {
+            const grid = document.getElementById('mangaGrid');
+            grid.innerHTML = list.map(m => `
+                <div class="glass manga-card rounded-xl p-2" onclick="openModal(${m.mal_id})">
+                    <img src="${m.images.jpg.image_url}" class="w-full h-48 object-cover rounded-lg mb-2">
+                    <h3 class="text-[10px] font-bold uppercase truncate">${m.title}</h3>
+                    <p class="text-[8px] text-red-500 font-bold mt-1">⭐ ${m.score || 'N/A'}</p>
+                </div>
+            `).join('');
+        }
+
+        async function openModal(id) {
+            const modal = document.getElementById('readerModal');
+            const content = document.getElementById('modalData');
+            modal.style.display = 'block';
+            content.innerHTML = '<p class="text-center w-full">Membuka Gulungan Komik...</p>';
+
+            const res = await fetch(`https://api.jikan.moe/v4/manga/${id}`);
+            const { data } = await res.json();
+
+            content.innerHTML = `
+                <img src="${data.images.jpg.large_image_url}" class="w-full md:w-48 h-72 object-cover rounded-xl border-2 border-red-600">
+                <div class="flex-1">
+                    <h2 class="font-anime text-2xl text-red-500 mb-2">${data.title}</h2>
+                    <p class="text-[10px] text-gray-300 mb-4 leading-relaxed">${data.synopsis ? data.synopsis.substring(0, 250) + '...' : 'Tidak ada sinopsis.'}</p>
+                    <div class="grid grid-cols-2 gap-2 text-[9px] mb-4">
+                        <span class="bg-red-900/40 p-1 rounded">STATUS: ${data.status}</span>
+                        <span class="bg-red-900/40 p-1 rounded">CHAPTER: ${data.chapters || '??'}</span>
+                    </div>
+                    <a href="${data.url}" target="_blank" class="block w-full text-center bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700 transition">BACA FULL DI SINI</a>
+                </div>
+            `;
+        }
+
+        function closeModal() {
+            document.getElementById('readerModal').style.display = 'none';
+        }
+
+        async function searchManga() {
+            const q = document.getElementById('searchInput').value;
+            const res = await fetch(`https://api.jikan.moe/v4/manga?q=${q}&limit=50`);
+            const data = await res.json();
+            display(data.data);
+        }
+
+        getManga();
+    </script>
+</body>
+</html>
