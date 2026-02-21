@@ -3,94 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Syahrul Otaku Portal</title>
+    <title>Syahrul Otaku Portal V3.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; }
-        .red-glow { text-shadow: 0 0 15px #ff0000; }
-        .glass { background: rgba(25, 25, 25, 0.95); border: 1px solid #444; }
-        #readerModal { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.95); }
+        body { background: #000; color: #fff; font-family: sans-serif; overflow-x: hidden; }
+        .glass { background: rgba(20, 20, 20, 0.98); border: 1px solid #444; }
+        /* Full Screen Reader */
+        #phantomReader { display: none; position: fixed; inset: 0; z-index: 200; background: #000; }
+        iframe { width: 100%; height: 100%; border: none; }
         .loader { border: 4px solid #1a1a1a; border-top: 4px solid #ef4444; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="p-4">
 
-    <header class="text-center py-10">
-        <h1 class="text-5xl font-black text-red-600 red-glow italic">SYAHRUL OTAKU</h1>
-        <p class="text-[10px] tracking-[0.3em] text-gray-500 mt-2">SHADOW READER V2.2</p>
+    <header class="text-center py-8">
+        <h1 class="text-5xl font-black text-red-600 italic drop-shadow-[0_0_10px_#f00]">SYAHRUL OTAKU</h1>
+        <p class="text-[10px] tracking-[0.3em] text-gray-500 mt-2 uppercase">Phantom Edition V3.0</p>
     </header>
 
-    <div class="max-w-md mx-auto mb-10 px-4">
-        <input type="text" id="searchInput" onkeyup="if(event.key==='Enter') searchManga()" 
-               placeholder="Ketik judul & tekan Enter..." 
-               class="w-full p-4 glass rounded-full outline-none border border-red-900 focus:border-red-500 transition text-sm">
-    </div>
-
     <div id="mangaGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 max-w-7xl mx-auto">
-        <div class="col-span-full flex flex-col items-center py-20">
-            <div class="loader"></div>
-            <p class="mt-4 text-red-500 text-sm">Membangun Portal Syahrul...</p>
         </div>
-    </div>
 
-    <div id="readerModal" onclick="closeModal()" class="flex items-center justify-center">
-        <div class="glass p-6 rounded-3xl max-w-lg w-full m-4 relative border-red-600" onclick="event.stopPropagation()">
-            <button onclick="closeModal()" class="absolute top-2 right-4 text-4xl text-red-600">&times;</button>
-            <div id="modalData"></div>
+    <div id="phantomReader">
+        <div class="absolute top-0 left-0 w-full p-4 bg-gradient-to-b from-black to-transparent z-50 flex justify-between items-center">
+            <span class="text-red-500 font-bold text-xs uppercase">Syahrul Shadow Mode</span>
+            <button onclick="closeReader()" class="bg-red-600 text-white px-4 py-1 rounded-full font-bold">TUTUP [X]</button>
         </div>
+        <iframe id="readerFrame" src=""></iframe>
     </div>
 
     <script>
-        // Fungsi utama ambil data dengan proteksi error
-        async function getManga(url = 'https://api.jikan.moe/v4/top/manga?limit=24') {
+        async function getManga() {
             const grid = document.getElementById('mangaGrid');
             try {
-                const res = await fetch(url);
+                const res = await fetch('https://api.jikan.moe/v4/top/manga?limit=30');
                 const json = await res.json();
-                
-                if (!json.data || json.data.length === 0) {
-                    grid.innerHTML = `<p class="col-span-full text-center text-gray-500">Data tidak ditemukan.</p>`;
-                    return;
-                }
-
                 grid.innerHTML = json.data.map(m => `
-                    <div class="glass p-2 rounded-2xl cursor-pointer hover:scale-105 transition transform" onclick="openModal(${m.mal_id})">
-                        <img src="${m.images.jpg.image_url}" class="w-full h-52 object-cover rounded-xl shadow-lg">
-                        <h3 class="text-[10px] mt-3 font-bold truncate px-1 uppercase">${m.title}</h3>
-                        <p class="text-[9px] text-red-500 font-bold px-1">⭐ ${m.score || 'N/A'}</p>
+                    <div class="glass p-2 rounded-2xl cursor-pointer hover:scale-105 transition" onclick="openReader('${m.url}')">
+                        <img src="${m.images.jpg.image_url}" class="w-full h-52 object-cover rounded-xl">
+                        <h3 class="text-[10px] mt-3 font-bold truncate uppercase">${m.title}</h3>
+                        <p class="text-[9px] text-red-500">TAP UNTUK BACA</p>
                     </div>
                 `).join('');
-            } catch (err) {
-                grid.innerHTML = `<div class="col-span-full text-center"><p class="text-red-500">Koneksi Gagal. Coba Refresh Halaman!</p><button onclick="location.reload()" class="mt-4 bg-red-600 px-6 py-2 rounded-full text-xs">REFRESH</button></div>`;
-            }
+            } catch (err) { grid.innerHTML = "<p>Internet lu bapuk, Rul!</p>"; }
         }
 
-        async function openModal(id) {
-            const modal = document.getElementById('readerModal');
-            const content = document.getElementById('modalData');
-            modal.style.display = 'flex';
-            content.innerHTML = '<div class="flex flex-col items-center py-10"><div class="loader"></div></div>';
-
-            try {
-                const res = await fetch(`https://api.jikan.moe/v4/manga/${id}`);
-                const { data } = await res.json();
-                content.innerHTML = `
-                    <div class="flex flex-col gap-4">
-                        <img src="${data.images.jpg.large_image_url}" class="w-full h-72 object-cover rounded-2xl border-2 border-red-600">
-                        <h2 class="text-xl font-bold text-red-500 uppercase italic">${data.title}</h2>
-                        <p class="text-[11px] text-gray-400 leading-relaxed line-clamp-4">${data.synopsis || 'Sinopsis menyusul.'}</p>
-                        <a href="${data.url}" target="_blank" class="bg-red-600 text-center py-4 rounded-xl font-black tracking-widest hover:bg-red-500 transition">BACA FULL</a>
-                    </div>
-                `;
-            } catch (err) { content.innerHTML = '<p class="text-red-500">Gagal memuat detail.</p>'; }
+        function openReader(url) {
+            const reader = document.getElementById('phantomReader');
+            const frame = document.getElementById('readerFrame');
+            // Kita arahkan ke web baca yang lebih ringan
+            frame.src = url; 
+            reader.style.display = 'block';
+            document.body.style.overflow = 'hidden'; // Biar gak scroll dobel
         }
 
-        function closeModal() { document.getElementById('readerModal').style.display = 'none'; }
-        
-        function searchManga() {
-            const q = document.getElementById('searchInput').value;
-            if (q.length > 2) getManga(`https://api.jikan.moe/v4/manga?q=${q}&limit=24`);
+        function closeReader() {
+            const reader = document.getElementById('phantomReader');
+            const frame = document.getElementById('readerFrame');
+            reader.style.display = 'none';
+            frame.src = ""; // Stop loading pas ditutup
+            document.body.style.overflow = 'auto';
         }
 
         getManga();
